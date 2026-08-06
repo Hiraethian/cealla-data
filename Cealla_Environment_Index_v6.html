@@ -1,0 +1,413 @@
+<!-- ==========================================================
+     CEALLA — ENVIRONMENT INDEX
+     Accordion list of written environments, Demiplane-style.
+     Self-contained: paste the whole thing into a Squarespace
+     code block (same method as the hex map page).
+
+     EDIT THESE TWO:
+       1. CONFIG — link prefix + optional map page URL
+       2. ENTRIES — your written environments (same field shape
+          as the map's HEXES stat-block fields)
+     ========================================================== -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&family=Cinzel:wght@500;600;700&family=Karla:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+<style>
+.cdx {
+  --slate:     #131b2c;
+  --slate-2:   #1b2539;
+  --slate-3:   #263450;
+  --rule:      #3c4e74;
+  --rune:      #e9cf8f;
+  --rune-soft: #f7e6b4;
+  --rune-dim:  #a68d54;
+  --amber:     #7ce0d3;
+  --ink:       #f4edda;
+  --ink-dim:   #97a3ba;
+  --disp: "Jost", "Futura", "Century Gothic", system-ui, sans-serif;
+  --disp2: "Cinzel", "Georgia", serif;
+  --body: "Karla", "Helvetica Neue", Arial, sans-serif;
+
+  font-family: var(--body);
+  background: linear-gradient(180deg, #182238, #111828);
+  color: var(--ink);
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+  border: 1px solid #93a0bd;
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 10px 34px rgba(0,0,0,.55);
+}
+.cdx * { box-sizing: border-box; }
+
+/* ---------- header ---------- */
+.cdx-head { border-bottom: 1px solid var(--rule); padding-bottom: 16px; }
+.cdx-head h1 {
+  font-family: var(--disp2); font-weight: 600; font-size: 25px;
+  letter-spacing: .22em; text-transform: uppercase; margin: 0;
+  text-shadow: 0 0 18px rgba(233,207,143,.3);
+}
+.cdx-head p {
+  margin: 7px 0 0; font-family: var(--disp); font-size: 10px; font-weight: 500;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--rune-dim);
+}
+
+/* ---------- controls ---------- */
+.cdx-controls { margin-top: 18px; display: flex; flex-direction: column; gap: 12px; }
+.cdx .cdx-search {
+  /* explicit box-sizing + block display so Squarespace input resets
+     can't push it past the container's right edge */
+  box-sizing: border-box !important;
+  display: block; width: 100%; max-width: 100%;
+  padding: 11px 14px; font-family: var(--body); font-size: 14px;
+  background: linear-gradient(180deg, #141c30, #1b2539); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 8px; outline: none;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.4);
+}
+.cdx .cdx-search:focus { border-color: var(--rune-dim); box-shadow: 0 0 0 1px rgba(233,207,143,.2); }
+.cdx .cdx-search::placeholder { color: var(--ink-dim); }
+
+.cdx-filter-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cdx-filter-label {
+  font-family: var(--disp); font-size: 9.5px; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--ink-dim);
+  margin-right: 4px; min-width: 40px;
+}
+.cdx-chip {
+  font-family: var(--disp); font-size: 11px; font-weight: 500;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: 6px 13px; border-radius: 999px; cursor: pointer;
+  background: var(--slate-2); color: var(--ink-dim);
+  border: 1px solid var(--rule); transition: all .15s ease;
+}
+.cdx-chip:hover { color: var(--ink); border-color: var(--rune-dim); }
+.cdx-chip.is-on {
+  background: var(--rune); color: #241c07; border-color: var(--rune);
+  box-shadow: 0 0 14px rgba(233,207,143,.35);
+}
+.cdx-count {
+  margin-left: auto; font-family: var(--disp); font-size: 10px; font-weight: 500;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--ink-dim);
+}
+
+/* ---------- list ---------- */
+.cdx-list { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+.cdx-empty {
+  padding: 40px 0; text-align: center; color: var(--ink-dim);
+  font-family: var(--disp); font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+}
+
+.cdx-item {
+  border: 1px solid #6d7a97; border-radius: 10px;
+  background: linear-gradient(180deg, #26334f, #1a2338);
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.cdx-item.is-open {
+  border-color: var(--rune);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 0 16px rgba(233,207,143,.28);
+}
+
+.cdx-row {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px; background: none; border: 0; cursor: pointer;
+  color: var(--ink); text-align: left; font-family: inherit;
+}
+.cdx-row:hover { background: var(--slate-3); }
+.cdx-row-name {
+  font-family: var(--disp2); font-weight: 600; font-size: 14.5px;
+  letter-spacing: .06em; text-transform: uppercase; flex: 1; min-width: 0;
+}
+.cdx-badge {
+  font-family: var(--disp); font-size: 9.5px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase;
+  padding: 4px 9px; border-radius: 3px; white-space: nowrap;
+}
+.cdx-badge.tier { background: var(--slate-3); color: var(--rune); border: 1px solid var(--rune-dim); }
+.cdx-badge.type { background: var(--slate-3); color: var(--amber); border: 1px solid var(--rule); }
+.cdx-badge.kind { background: var(--slate-3); color: var(--ink-dim); border: 1px solid var(--rule); }
+.cdx-chev {
+  width: 9px; height: 9px; flex: none;
+  border-right: 2px solid var(--rune-dim); border-bottom: 2px solid var(--rune-dim);
+  transform: rotate(45deg); transition: transform .18s ease; margin-top: -4px;
+}
+.cdx-item.is-open .cdx-chev { transform: rotate(225deg); margin-top: 4px; }
+
+/* accordion body — animated grid trick */
+.cdx-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .22s ease; }
+.cdx-item.is-open .cdx-body { grid-template-rows: 1fr; }
+.cdx-body-inner { overflow: hidden; }
+.cdx-block { padding: 4px 18px 18px; border-top: 1px solid var(--rule); }
+
+/* ---------- stat block (mirrors the map popup) ---------- */
+.cdx-dh-title {
+  font-family: var(--disp2); font-weight: 600; font-size: 18px;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ink);
+  margin: 14px 0 0; line-height: 1.15;
+  padding-bottom: 8px; border-bottom: 2px solid var(--rune);
+  text-shadow: 0 0 18px rgba(233,207,143,.3);
+}
+.cdx-dh-tier {
+  font-family: var(--disp); font-weight: 600; font-size: 12px;
+  letter-spacing: .08em; color: var(--rune); margin-top: 7px;
+}
+.cdx-dh-flavor { margin: 8px 0 0; font-size: 13px; font-style: italic; color: #ccd8e4; }
+.cdx-dh-impulses {
+  margin-top: 10px; padding: 8px 0;
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  font-size: 13px; color: #e4edef;
+}
+.cdx-dh-impulses b { color: var(--ink); }
+.cdx-dh-box {
+  margin-top: 10px; border: 1px solid #6d7a97; border-left: 3px solid var(--rune);
+  background: linear-gradient(180deg, #1a2338, #141c2e); border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+}
+.cdx-dh-box div { padding: 7px 11px; font-size: 13px; color: #e4edef; }
+.cdx-dh-box div + div { border-top: 1px solid var(--rule); }
+.cdx-dh-box b { color: var(--ink); }
+.cdx-dh-feats {
+  font-family: var(--disp); font-weight: 600; font-size: 13px;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--ink);
+  margin: 14px 0 0;
+}
+.cdx-dh-feat { margin: 8px 0 0; font-size: 13px; color: #e4edef; text-align: justify; line-height: 1.55; }
+.cdx-dh-feat b { color: var(--ink); }
+.cdx-dh-feat .cdx-dh-ftype { color: var(--amber); }
+.cdx-go {
+  display: inline-block; margin-top: 15px; padding: 9px 18px; border-radius: 3px;
+  background: var(--rune); color: #241c07; text-decoration: none;
+  font-family: var(--disp); font-weight: 600; font-size: 11.5px;
+  letter-spacing: .2em; text-transform: uppercase;
+  box-shadow: 0 0 18px rgba(233,207,143,.4); transition: background .16s ease, box-shadow .16s ease;
+}
+.cdx-go:hover { background: var(--rune-soft); color: #241c07; box-shadow: 0 0 28px rgba(233,207,143,.7); }
+.cdx-maplink {
+  display: inline-block; margin: 15px 0 0 8px; padding: 9px 18px; border-radius: 3px;
+  background: none; color: var(--rune); text-decoration: none;
+  border: 1px solid var(--rune-dim);
+  font-family: var(--disp); font-weight: 600; font-size: 11.5px;
+  letter-spacing: .2em; text-transform: uppercase; transition: all .16s ease;
+}
+.cdx-maplink:hover { border-color: var(--rune); box-shadow: 0 0 14px rgba(233,207,143,.3); color: var(--rune-soft); }
+
+@media (max-width: 560px) {
+  .cdx { padding: 20px 12px 40px; }
+  .cdx-badge.kind { display: none; }
+  .cdx-count { width: 100%; margin: 2px 0 0; }
+}
+</style>
+<!-- CPP brand layer: Caslon Antique, seal, divider, texture.
+     Must come AFTER the inline style above so its overrides win. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/USER/REPO@main/cealla-brand.css">
+
+
+<div class="cdx" id="cdxRoot">
+  <div class="cdx-head">
+    <h1>Environments of Cealla</h1>
+    <p>Field records &mdash; written entries</p>
+  </div>
+
+  <div class="cdx-controls">
+    <input class="cdx-search" id="cdxSearch" type="search"
+           placeholder="Search by name, adversary, or feature&hellip;" autocomplete="off">
+    <div class="cdx-filter-row" id="cdxTierRow">
+      <span class="cdx-filter-label">Tier</span>
+    </div>
+    <div class="cdx-filter-row" id="cdxTypeRow">
+      <span class="cdx-filter-label">Type</span>
+      <span class="cdx-count" id="cdxCount"></span>
+    </div>
+  </div>
+
+  <div class="cdx-list" id="cdxList"></div>
+</div>
+
+<!-- Shared data — same tag as on the map page. If it loads, its
+     entries replace the inline ENTRIES fallback below. -->
+<script src="https://cdn.jsdelivr.net/gh/USER/REPO@main/cealla-data.js"></script>
+
+<script>
+(function () {
+"use strict";
+
+/* ============================================================
+   1. CONFIG
+   ============================================================ */
+const CONFIG = {
+  linkBase: "/lore/",      // prefix for each entry's slug
+  linkTarget: "_self",
+  mapPage: "/testhex"      // your hex map page; set to "" to hide the map button
+};
+
+/* ============================================================
+   2. ENTRIES
+      Same field shape as the map's HEXES stat-block fields.
+      Everything after "name" is optional and skipped if absent.
+      The two entries below are placeholders — replace them.
+   ============================================================ */
+/* Inline fallback — used only when the shared data file above
+   fails to load. With the shared file in place you never edit this. */
+const ENTRIES_FALLBACK = [
+
+  { name: "Example Environment One", slug: "example-one",
+    kind: "town",
+    tier: 1,
+    envType: "Event",
+    flavor: "One italic line of scene-setting goes here.",
+    impulses: "First impulse, second impulse",
+    difficulty: 11,
+    adversaries: "Adversary A, Adversary B",
+    features: [
+      { name: "Feature Name", type: "Action",
+        text: "Effect text. Inline <b>bold</b> is allowed for keywords." },
+      { name: "Second Feature", type: "Passive",
+        text: "More effect text describing an ongoing condition." }
+    ] },
+
+  { name: "Example Environment Two", slug: "example-two",
+    kind: "city",
+    tier: 2,
+    envType: "Exploration",
+    flavor: "A second placeholder so the filters have something to do.",
+    impulses: "Third impulse, fourth impulse",
+    difficulty: 14,
+    adversaries: "Adversary C",
+    features: [
+      { name: "Only Feature", type: "Reaction",
+        text: "Triggered effect text." }
+    ] },
+
+];
+
+/* ============================================================
+   3. RENDERING — no edits needed below
+   ============================================================ */
+const SHARED = window.CEALLA_DATA || null;
+const ENTRIES = (SHARED && Array.isArray(SHARED.entries)) ? SHARED.entries : ENTRIES_FALLBACK;
+if (SHARED) {
+  if (SHARED.linkBase) CONFIG.linkBase = SHARED.linkBase;
+  if (SHARED.mapPage != null) CONFIG.mapPage = SHARED.mapPage;
+}
+const KIND_LABELS = {
+  city: "City", town: "City / Town", settlement: "Township",
+  fangyskyll: "Fangyskyll", litri: "Litri Station",
+  ruin: "Ruin", wild: "Wilds", sea: "Open Water"
+};
+const TYPES = ["Event", "Exploration", "Social", "Traversal"];
+
+let q = "", tierF = 0, typeF = "";   // 0 / "" mean "all"
+
+function block(e) {
+  let out = '<div class="cdx-block">' +
+    '<div class="cdx-dh-title">' + e.name + '</div>';
+  if (e.tier != null || e.envType)
+    out += '<div class="cdx-dh-tier">' +
+      (e.tier != null ? 'Tier ' + e.tier + ' ' : '') + (e.envType || '') + '</div>';
+  if (e.flavor) out += '<p class="cdx-dh-flavor">' + e.flavor + '</p>';
+  if (e.impulses) out += '<div class="cdx-dh-impulses"><b>Impulses:</b> ' + e.impulses + '</div>';
+  if (e.difficulty != null || e.adversaries) {
+    out += '<div class="cdx-dh-box">';
+    if (e.difficulty != null) out += '<div><b>Difficulty:</b> ' + e.difficulty + '</div>';
+    if (e.adversaries) out += '<div><b>Potential Adversaries:</b> ' + e.adversaries + '</div>';
+    out += '</div>';
+  }
+  if (e.features && e.features.length) {
+    out += '<div class="cdx-dh-feats">Features</div>';
+    e.features.forEach(function (f) {
+      out += '<p class="cdx-dh-feat"><b>' + f.name +
+        (f.type ? ' - <span class="cdx-dh-ftype">' + f.type + '</span>' : '') +
+        ':</b> ' + f.text + '</p>';
+    });
+  }
+  if (e.slug)
+    out += '<a class="cdx-go" href="' + CONFIG.linkBase + e.slug + '" target="' + CONFIG.linkTarget + '">Read the full entry</a>';
+  if (CONFIG.mapPage)
+    out += '<a class="cdx-maplink" href="' + CONFIG.mapPage + '" target="' + CONFIG.linkTarget + '">View on map</a>';
+  out += '</div>';
+  return out;
+}
+
+function haystack(e) {
+  let s = e.name + " " + (e.adversaries || "") + " " + (e.impulses || "") + " " + (e.flavor || "");
+  (e.features || []).forEach(function (f) { s += " " + f.name + " " + f.text; });
+  return s.toLowerCase();
+}
+
+function render() {
+  const list = document.getElementById("cdxList");
+  const shown = ENTRIES
+    .filter(function (e) {
+      if (tierF && e.tier !== tierF) return false;
+      if (typeF && e.envType !== typeF) return false;
+      if (q && haystack(e).indexOf(q) === -1) return false;
+      return true;
+    })
+    .sort(function (a, b) { return a.name.localeCompare(b.name); });
+
+  document.getElementById("cdxCount").textContent =
+    shown.length + " of " + ENTRIES.length + " entries";
+
+  if (!shown.length) {
+    list.innerHTML = '<div class="cdx-empty">No entries match</div>';
+    return;
+  }
+
+  list.innerHTML = shown.map(function (e, i) {
+    return '<div class="cdx-item" data-i="' + i + '">' +
+      '<button class="cdx-row" aria-expanded="false">' +
+        '<span class="cdx-row-name">' + e.name + '</span>' +
+        (e.tier != null ? '<span class="cdx-badge tier">Tier ' + e.tier + '</span>' : '') +
+        (e.envType ? '<span class="cdx-badge type">' + e.envType + '</span>' : '') +
+        (e.kind && KIND_LABELS[e.kind] ? '<span class="cdx-badge kind">' + KIND_LABELS[e.kind] + '</span>' : '') +
+        '<span class="cdx-chev"></span>' +
+      '</button>' +
+      '<div class="cdx-body"><div class="cdx-body-inner">' + block(e) + '</div></div>' +
+    '</div>';
+  }).join("");
+
+  list.querySelectorAll(".cdx-row").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const item = btn.parentElement;
+      const open = item.classList.toggle("is-open");
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+  });
+}
+
+/* filter chips */
+function chip(label, on, fn) {
+  const b = document.createElement("button");
+  b.className = "cdx-chip" + (on ? " is-on" : "");
+  b.textContent = label;
+  b.addEventListener("click", fn);
+  return b;
+}
+function buildChips() {
+  const tr = document.getElementById("cdxTierRow");
+  tr.querySelectorAll(".cdx-chip").forEach(function (c) { c.remove(); });
+  tr.appendChild(chip("All", tierF === 0, function () { tierF = 0; buildChips(); render(); }));
+  [1, 2, 3, 4].forEach(function (t) {
+    tr.appendChild(chip("Tier " + t, tierF === t, function () { tierF = t; buildChips(); render(); }));
+  });
+  const ty = document.getElementById("cdxTypeRow");
+  ty.querySelectorAll(".cdx-chip").forEach(function (c) { c.remove(); });
+  const count = document.getElementById("cdxCount");
+  ty.insertBefore(chip("All", typeF === "", function () { typeF = ""; buildChips(); render(); }), count);
+  TYPES.forEach(function (t) {
+    ty.insertBefore(chip(t, typeF === t, function () { typeF = t; buildChips(); render(); }), count);
+  });
+}
+
+document.getElementById("cdxSearch").addEventListener("input", function (e) {
+  q = e.target.value.trim().toLowerCase();
+  render();
+});
+
+buildChips();
+render();
+})();
+</script>

@@ -1,0 +1,776 @@
+<!-- ============================================================
+     CEALLA — INTERACTIVE HEX MAP
+     Single file. No build step. No backend.
+     Paste into a Squarespace Code Block.
+
+     REQUIRES the map image. Set CONFIG.baseImage to wherever you
+     host it (upload cealla-map.jpg to Squarespace and paste its URL).
+     Locally, keep cealla-map.jpg beside this file and it just works.
+
+     EDIT THESE FOUR (top of <script>):
+       1. CONFIG — grid, image, link prefixhttps://www.calamitypunkpublishing.com/testhex
+       2. KINDS  — the legend categories
+       3. MASK   — grid squares to leave blank (cartouche, legend, compass)
+       4. HEXES  — the regions you've actually written
+     ============================================================ -->
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&family=Cinzel:wght@500;600;700&family=Karla:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+<style>
+.svy {
+  /* Alexandria night — FFIX dialog navy */
+  --slate:     #131b2c;
+  --slate-2:   #1b2539;
+  --slate-3:   #263450;
+  --rule:      #3c4e74;
+
+  /* BotW selection gold as primary accent */
+  --rune:      #e9cf8f;
+  --rune-soft: #f7e6b4;
+  --rune-dim:  #a68d54;
+  /* Sheikah cyan demoted to secondary accent */
+  --amber:     #7ce0d3;
+
+  --ink:       #f4edda;
+  --ink-dim:   #97a3ba;
+
+  --disp: "Jost", "Futura", "Century Gothic", system-ui, sans-serif;
+  --disp2: "Cinzel", "Georgia", serif;
+  --body: "Karla", "Helvetica Neue", Arial, sans-serif;
+
+  position: relative;
+  display: grid;
+  grid-template-areas: "head head" "map panel";
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 1fr 300px;
+  transition: grid-template-columns .3s cubic-bezier(.4,0,.2,1);
+  background: var(--slate);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  /* 16:9, capped at 1920 wide, and never taller than the viewport */
+  width: min(100%, 1920px, calc(92vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  height: auto;
+  margin: 0 auto;
+  color: var(--ink);
+  font-family: var(--body);
+  overflow: hidden;
+}
+.svy.is-collapsed { grid-template-columns: 1fr 0px; }
+
+/* ---------- header bar ---------- */
+.svy-head {
+  grid-area: head;
+  display: flex; align-items: center; gap: 18px;
+  padding: 0 14px 0 18px; height: 52px;
+  background: var(--slate-2); border-bottom: 1px solid var(--rule);
+}
+.svy-title { display: flex; align-items: baseline; gap: 13px; min-width: 0; }
+.svy-title b {
+  font-family: var(--disp2); font-size: 16px; font-weight: 600;
+  letter-spacing: .26em; text-transform: uppercase; color: var(--ink);
+  text-shadow: 0 0 16px rgba(233,207,143,.35);
+}
+.svy-title span {
+  font-family: var(--disp); font-size: 9px; font-weight: 500;
+  letter-spacing: .3em; text-transform: uppercase; color: var(--rune-dim);
+  white-space: nowrap;
+}
+.svy-head-count {
+  margin-left: auto; white-space: nowrap;
+  font-family: var(--disp); font-size: 10px; font-weight: 500;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--ink-dim);
+}
+.svy-head-count em {
+  font-style: normal; font-weight: 500; font-size: 13px; color: var(--rune);
+  text-shadow: 0 0 12px rgba(233,207,143,.6);
+}
+.svy-tab {
+  display: flex; align-items: center; gap: 9px; flex: none;
+  background: none; cursor: pointer; border-radius: 3px;
+  border: 1px solid var(--rune-dim); color: var(--rune);
+  font-family: var(--disp); font-size: 10px; font-weight: 600;
+  letter-spacing: .2em; text-transform: uppercase; padding: 7px 12px;
+  transition: background .16s ease, box-shadow .16s ease;
+}
+.svy-tab:hover, .svy-tab:focus-visible {
+  background: rgba(233,207,143,.1); box-shadow: 0 0 14px rgba(233,207,143,.3); outline: none;
+}
+.svy-tab svg { transition: transform .3s cubic-bezier(.4,0,.2,1); }
+.svy.is-collapsed .svy-tab svg { transform: rotate(180deg); }
+
+.svy-canvas { grid-area: map; position: relative; background: var(--slate); min-width: 0; }
+.svy-map { position: absolute; inset: 0; background: var(--slate); }
+.svy .leaflet-container { background: var(--slate); font-family: var(--body); outline: none; }
+
+.svy .leaflet-interactive { transition: filter .18s ease; }
+.svy .leaflet-interactive:hover { filter: drop-shadow(0 0 8px rgba(233,207,143,.95)); }
+
+/* written regions stay lit whether or not you're pointing at them */
+.svy .svy-lit {
+  filter: drop-shadow(0 0 5px rgba(233,207,143,.9)) drop-shadow(0 0 13px rgba(233,207,143,.45));
+}
+.svy .svy-lit:hover {
+  filter: drop-shadow(0 0 8px rgba(233,207,143,1)) drop-shadow(0 0 22px rgba(233,207,143,.65));
+}
+
+/* settlement beacon */
+.svy-beacon i {
+  position: absolute; left: -12px; top: -12px; width: 24px; height: 24px;
+  border: 1.5px solid var(--rune); border-radius: 50%;
+  animation: svy-ping 2.8s cubic-bezier(.2,.6,.3,1) infinite;
+}
+.svy-beacon.is-town i { animation-duration: 3.6s; border-color: var(--rune-dim); }
+@keyframes svy-ping {
+  0%   { transform: scale(.4); opacity: .95; }
+  75%  { transform: scale(1.55); opacity: 0; }
+  100% { transform: scale(1.55); opacity: 0; }
+}
+
+/* ---------- panel ---------- */
+.svy-panel {
+  grid-area: panel; background: var(--slate-2);
+  border-left: 1px solid var(--rule);
+  min-width: 0; min-height: 0; overflow: hidden;
+}
+.svy.is-collapsed .svy-panel { border-left-width: 0; }
+.svy-panel-inner {
+  width: 300px; height: 100%; box-sizing: border-box;
+  display: flex; flex-direction: column; min-height: 0;
+}
+.svy-panel-head { padding: 18px 16px 14px; border-bottom: 1px solid var(--rule); }
+
+.svy-eyebrow {
+  font-family: var(--disp); font-size: 9.5px; font-weight: 500; letter-spacing: .28em;
+  text-transform: uppercase; color: var(--rune-dim); margin: 0 0 11px;
+}
+.svy-count {
+  font-family: var(--disp); font-size: 34px; font-weight: 300;
+  letter-spacing: .04em; line-height: 1; margin: 0; color: var(--ink);
+}
+.svy-count em {
+  font-style: normal; font-weight: 400; color: var(--rune);
+  text-shadow: 0 0 16px rgba(233,207,143,.6);
+}
+.svy-count small {
+  display: block; font-family: var(--disp); font-size: 9.5px; font-weight: 500;
+  letter-spacing: .22em; text-transform: uppercase; color: var(--ink-dim); margin-top: 8px;
+}
+.svy-bar { height: 2px; background: var(--rule); margin-top: 13px; }
+.svy-bar i { display: block; height: 100%; background: var(--rune); box-shadow: 0 0 9px var(--rune); }
+
+.svy-search {
+  width: 100%; box-sizing: border-box; margin-top: 15px; border-radius: 3px;
+  background: var(--slate); border: 1px solid var(--rule);
+  color: var(--ink); font-family: var(--body); font-size: 12.5px; padding: 9px 11px;
+}
+.svy-search::placeholder { color: #55707a; }
+.svy-search:focus { outline: none; border-color: var(--rune-dim); box-shadow: 0 0 0 2px rgba(233,207,143,.18); }
+
+.svy-scroll { overflow-y: auto; flex: 1; min-height: 0; }
+.svy-group { padding: 15px 16px; border-bottom: 1px solid var(--rule); }
+
+.svy-hit {
+  display: block; width: 100%; text-align: left; box-sizing: border-box; border-radius: 3px;
+  background: none; border: 0; border-left: 2px solid transparent;
+  padding: 8px 10px; cursor: pointer; color: var(--ink);
+  font-family: var(--body); font-size: 13.5px; transition: background .14s ease;
+}
+.svy-hit:hover, .svy-hit:focus-visible {
+  background: var(--slate-3); border-left-color: var(--rune); outline: none;
+}
+.svy-hit u {
+  display: block; text-decoration: none; font-family: var(--disp);
+  font-size: 9.5px; font-weight: 500; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--ink-dim); margin-top: 3px;
+}
+
+.svy-key { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 12.5px; }
+.svy-key i {
+  width: 11px; height: 11px; flex: none; border-radius: 50%;
+  background: var(--rune); box-shadow: 0 0 8px rgba(233,207,143,.8);
+}
+.svy-key.is-quiet i { background: none; border: 1px solid var(--rune-dim); box-shadow: none; opacity: .55; }
+.svy-key.is-lit i {
+  background: rgba(247,230,180,.16); border: 1.5px solid var(--rune); border-radius: 2px;
+  box-shadow: 0 0 6px rgba(233,207,143,.9), 0 0 13px rgba(233,207,143,.5);
+}
+
+.svy-toggle {
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  font-family: var(--disp); font-size: 10px; font-weight: 500; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--ink-dim); padding: 5px 0;
+}
+.svy-toggle input { accent-color: var(--rune); width: 14px; height: 14px; }
+
+.svy-empty { font-size: 13px; color: var(--ink-dim); font-style: italic; }
+
+/* ---------- popup ---------- */
+.svy .leaflet-popup-content-wrapper {
+  /* FFIX dialog box: navy gradient, silver frame, soft inner light */
+  background: linear-gradient(180deg, rgba(45,59,92,.97), rgba(23,31,51,.97));
+  color: var(--ink);
+  border: 1px solid #93a0bd; border-radius: 10px;
+  box-shadow: 0 0 0 1px rgba(19,27,44,.9), 0 14px 42px rgba(0,0,0,.75),
+              inset 0 1px 0 rgba(255,255,255,.16);
+}
+.svy .leaflet-popup-content { margin: 0; width: 320px !important; line-height: 1.55; }
+.svy .leaflet-popup-tip { background: rgba(24,32,52,.97); border: 1px solid #93a0bd; }
+.svy .leaflet-popup-close-button { color: var(--rune-dim) !important; font-size: 20px; padding: 7px 9px 0 0 !important; }
+.svy .leaflet-popup-close-button:hover { color: var(--rune) !important; }
+
+.svy-card { padding: 14px 16px 16px; }
+.svy-card-meta {
+  display: flex; justify-content: space-between; gap: 10px;
+  font-family: var(--disp); font-size: 9.5px; font-weight: 500; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--rune-dim);
+  border-bottom: 1px solid var(--rule); padding-bottom: 9px;
+}
+.svy-card h4 {
+  font-family: var(--disp); font-weight: 300; font-size: 25px;
+  letter-spacing: .1em; text-transform: uppercase;
+  margin: 12px 0 0; line-height: 1.12; color: var(--ink);
+  text-shadow: 0 0 18px rgba(233,207,143,.3);
+}
+.svy-card-kind {
+  font-family: var(--disp); font-size: 10px; font-weight: 500; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--rune); margin-top: 7px;
+}
+.svy-card p { margin: 11px 0 0; font-size: 13.5px; color: #bcd2d7; }
+.svy-card-threat {
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rule);
+  font-family: var(--disp); font-size: 10px; font-weight: 500; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--ink-dim);
+}
+.svy-card-threat b { color: var(--amber); font-weight: 500; }
+
+.svy-go {
+  display: block; margin-top: 14px; padding: 10px 12px; border-radius: 3px;
+  background: var(--rune); color: #241c07; text-decoration: none;
+  font-family: var(--disp); font-weight: 600; font-size: 12.5px;
+  letter-spacing: .2em; text-transform: uppercase; text-align: center;
+  box-shadow: 0 0 18px rgba(233,207,143,.4); transition: background .16s ease, box-shadow .16s ease;
+}
+.svy-go:hover { background: var(--rune-soft); color: #241c07; box-shadow: 0 0 28px rgba(233,207,143,.7); }
+
+/* ---------- Daggerheart environment stat block (written hexes) ---------- */
+.svy-dh-title {
+  font-family: var(--disp2); font-weight: 600; font-size: 18px;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ink);
+  margin: 12px 0 0; line-height: 1.15;
+  padding-bottom: 8px; border-bottom: 2px solid var(--rune);
+  text-shadow: 0 0 18px rgba(233,207,143,.3);
+}
+.svy-dh-tier {
+  font-family: var(--disp); font-weight: 600; font-size: 12px;
+  letter-spacing: .08em; color: var(--rune); margin-top: 7px;
+}
+.svy-dh-flavor { margin: 8px 0 0; font-size: 12.5px; font-style: italic; color: #ccd8e4; }
+.svy-dh-impulses {
+  margin-top: 10px; padding: 8px 0;
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  font-size: 12.5px; color: #e4edef;
+}
+.svy-dh-impulses b { color: var(--ink); }
+.svy-dh-box {
+  margin-top: 10px; border: 1px solid var(--rule); border-left: 3px solid var(--rune);
+  background: var(--slate-3); border-radius: 2px;
+}
+.svy-dh-box div { padding: 7px 11px; font-size: 12.5px; color: #e4edef; }
+.svy-dh-box div + div { border-top: 1px solid var(--rule); }
+.svy-dh-box b { color: var(--ink); }
+.svy-dh-feats {
+  font-family: var(--disp); font-weight: 600; font-size: 13px;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--ink);
+  margin: 13px 0 0;
+}
+.svy-dh-feat { margin: 8px 0 0; font-size: 12.5px; color: #e4edef; text-align: justify; }
+.svy-dh-feat b { color: var(--ink); }
+.svy-dh-feat .svy-dh-ftype { color: var(--amber); }
+.svy-locked {
+  margin-top: 14px; padding: 10px 12px; text-align: center; border-radius: 3px;
+  border: 1px dashed var(--rune-dim); color: var(--rune-dim);
+  font-family: var(--disp); font-size: 10px; font-weight: 500;
+  letter-spacing: .22em; text-transform: uppercase;
+}
+
+@media (max-width: 900px) {
+  .svy {
+    grid-template-areas: "head" "map" "panel";
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr 54%;
+    transition: grid-template-rows .3s cubic-bezier(.4,0,.2,1);
+    aspect-ratio: auto;
+    width: 100%;
+    height: clamp(600px, 88vh, 900px);
+  }
+  .svy.is-collapsed { grid-template-columns: 1fr; grid-template-rows: auto 1fr 0px; }
+  .svy-panel { border-left: 0; border-top: 1px solid var(--rule); }
+  .svy.is-collapsed .svy-panel { border-top-width: 0; }
+  .svy-panel-inner { width: 100%; }
+  .svy-head { gap: 12px; padding: 0 10px 0 14px; }
+  .svy-head-count { display: none; }
+  .svy-title b { font-size: 15px; letter-spacing: .24em; }
+  .svy-title span { display: none; }
+  .svy-count { font-size: 28px; }
+  .svy.is-collapsed .svy-tab svg { transform: rotate(-90deg); }
+  .svy-tab svg { transform: rotate(90deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .svy *, .svy *::after { transition: none !important; animation: none !important; }
+}
+</style>
+<!-- CPP brand layer: Caslon Antique, seal, divider, texture.
+     Must come AFTER the inline style above so its overrides win. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/USER/REPO@main/cealla-brand.css">
+
+
+<div class="svy is-collapsed" id="svyRoot">
+  <header class="svy-head">
+    <div class="svy-title">
+      <b>Cealla</b>
+      <span>Regional survey</span>
+    </div>
+    <span class="svy-head-count"><em id="svyHeadDone">0</em> / <span id="svyHeadTotal">0</span> charted</span>
+    <button class="svy-tab" id="svyTab" type="button" aria-expanded="false" aria-controls="svyPanel">
+      <svg width="9" height="11" viewBox="0 0 9 11" aria-hidden="true">
+        <path d="M7 1 2 5.5 7 10" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Survey log
+    </button>
+  </header>
+
+  <div class="svy-canvas">
+    <div class="svy-map" id="svyMap"></div>
+  </div>
+
+  <aside class="svy-panel" id="svyPanel">
+    <div class="svy-panel-inner">
+      <div class="svy-panel-head">
+        <p class="svy-eyebrow">Charted</p>
+        <p class="svy-count"><em id="svyDone">0</em> / <span id="svyTotal">0</span>
+          <small>regions written</small></p>
+        <div class="svy-bar"><i id="svyBar" style="width:0%"></i></div>
+        <input class="svy-search" id="svySearch" type="search"
+               placeholder="Find a region or settlement" aria-label="Find a region or settlement">
+      </div>
+
+      <div class="svy-scroll">
+        <div class="svy-group" id="svyResults"></div>
+        <div class="svy-group">
+          <p class="svy-eyebrow">Legend</p>
+          <div id="svyKey"></div>
+        </div>
+        <div class="svy-group">
+          <p class="svy-eyebrow">Display</p>
+          <label class="svy-toggle"><input type="checkbox" id="svyWritten"> Written regions only</label>
+          <label class="svy-toggle"><input type="checkbox" id="svyNoGrid"> Hide the grid</label>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<!-- ==========================================================
+     SHARED DATA (optional but recommended)
+     Point this at your GitHub-hosted cealla-data.js via jsDelivr.
+     Entries there that carry col/row are merged into HEXES below,
+     so the map and the environment index share one data file.
+     If the tag 404s or is removed, the map falls back to the
+     inline HEXES array alone.
+     ========================================================== -->
+<script src="https://cdn.jsdelivr.net/gh/USER/REPO@main/cealla-data.js"></script>
+
+<script>
+(function () {
+"use strict";
+
+/* ============================================================
+   1. CONFIG
+   ============================================================ */
+const CONFIG = {
+  // 44 x 36 matches the map's 1.414 aspect almost exactly.
+  // Change these and the grid rescales itself to the art.
+  cols: 44,
+  rows: 36,
+  hexSize: 21,
+
+  // Upload cealla-map.jpg to Squarespace and paste its URL here.
+  baseImage: "https://static1.squarespace.com/static/673f340165a71b0fc817fb27/t/6a74aa281adc2239c6292295/1786030633171/Cealla+Map+HEX+%281%29.png",
+  imageOpacity: 1,
+
+  // Native pixel size of the base image. Used to convert each hex's
+  // optional px/py (symbol position on the art) into beacon coordinates.
+  imgW: 4961,
+  imgH: 3508,
+
+  linkBase: "/lore/",
+  linkTarget: "_self",
+
+  // "contain" shows the whole map with dark bands above and below.
+  // "fill" zooms until the art covers the panel edge to edge; you pan
+  // to reach the rest. Switch if the bands bother you.
+  fitMode: "contain",
+
+  gridOpacity: 0.22,   // hairline strength on unwritten regions
+  litOpacity:  1,      // stroke strength on written regions
+  litWeight:   2,      // stroke width on written regions
+  litTint:     0.09    // luminous wash inside written regions; 0 = pure art
+};
+
+/* ============================================================
+   2. KINDS — mirrors the map's own legend
+   ============================================================ */
+const KINDS = {
+  city:       { label: "City",              beacon: "city"  },
+  town:       { label: "Town",              beacon: "town"  },
+  settlement: { label: "Township",          beacon: "town"  },
+  fangyskyll: { label: "Fangyskyll",        beacon: "town"  },
+  litri:      { label: "Litri Station",     beacon: "town"  },
+  ruin:       { label: "Ruin",              beacon: null    },
+  wild:       { label: "Wilderness",        beacon: null    },
+  sea:        { label: "Open water",        beacon: null    }
+};
+
+/* ============================================================
+   3. MASK — grid squares to leave blank, if you ever want to.
+      Empty means the grid covers the entire map, furniture and all.
+      Each entry would be [colFrom, rowFrom, colTo, rowTo], inclusive,
+      e.g. [0, 5, 4, 7] to clear the CEALLA cartouche.
+   ============================================================ */
+const MASK = [];
+
+/* ============================================================
+   4. HEXES — the regions you've actually written.
+      col/row counted from the top-left, 0-indexed.
+      Anything omitted stays uncharted.
+
+      NOTE: teasers below are placeholder copy written off the map
+      itself, not your canon. Replace them.
+   ============================================================ */
+const HEXES = [
+
+  /* ---------------------------------------------------------------
+     Deliberately empty: every hex renders uncharted. Add entries here
+     (col/row/kind/name/slug/threat/teaser) when a region is written
+     and it lights up as before. Verified pixel coordinates for every
+     named location's symbol live in cealla_marker_coords.js.
+
+     Written hexes now render as a Daggerheart environment stat
+     block. Field shape (everything below col/row/kind/name/slug is
+     optional and skipped when absent):
+
+     { col:20, row:13, kind:"city", name:"Example", slug:"example",
+       tier: 1,
+       envType: "Event",                     // Event / Exploration / Social / Traversal
+       flavor: "One italic line of scene-setting.",
+       impulses: "Impulse one, impulse two",
+       difficulty: 11,
+       adversaries: "Adversary A, Adversary B",
+       features: [
+         { name:"Feature Name", type:"Action",
+           text:"Effect text. Inline <b>bold</b> is allowed." },
+         { name:"Second Feature", type:"Passive",
+           text:"More effect text." }
+       ] },
+     --------------------------------------------------------------- */
+
+];
+
+/* Merge shared-file entries (window.CEALLA_DATA) into HEXES.
+   Only entries with col/row become hexes; inline entries above win
+   on collision so local overrides stay possible. Shared linkBase /
+   mapPage, when present, override CONFIG. */
+if (window.CEALLA_DATA && Array.isArray(window.CEALLA_DATA.entries)) {
+  if (window.CEALLA_DATA.linkBase) CONFIG.linkBase = window.CEALLA_DATA.linkBase;
+  const taken = {};
+  HEXES.forEach(function (h) { taken[h.col + ":" + h.row] = true; });
+  window.CEALLA_DATA.entries.forEach(function (e) {
+    if (e.col == null || e.row == null) return;
+    if (taken[e.col + ":" + e.row]) return;
+    taken[e.col + ":" + e.row] = true;
+    HEXES.push(e);
+  });
+}
+
+
+/* ============================================================
+   Machinery below. You shouldn't need to edit it.
+   ============================================================ */
+
+const S = CONFIG.hexSize;
+const SQ3 = Math.sqrt(3);
+
+function toAxial(col, row) { return { q: col - ((row - (row & 1)) / 2), r: row }; }
+function center(q, r) { return { x: S * SQ3 * (q + r / 2), y: S * 1.5 * r }; }
+
+function corners(cx, cy) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 180 * (60 * i - 30);
+    pts.push([-(cy + S * Math.sin(a)), cx + S * Math.cos(a)]);
+  }
+  return pts;
+}
+
+const label = (c, r) => String(c).padStart(2, "0") + "." + String(r).padStart(2, "0");
+
+const masked = (c, r) => MASK.some(m => c >= m[0] && c <= m[2] && r >= m[1] && r <= m[3]);
+
+const authored = new Map();
+HEXES.forEach(h => authored.set(h.col + ":" + h.row, h));
+
+const grid = [];
+for (let row = 0; row < CONFIG.rows; row++) {
+  for (let col = 0; col < CONFIG.cols; col++) {
+    if (masked(col, row)) continue;
+    const found = authored.get(col + ":" + row);
+    grid.push(found
+      ? Object.assign({ charted: true }, found)
+      : { col, row, charted: false, name: "Uncharted", kind: null });
+  }
+}
+
+/* ---------- map ---------- */
+const map = L.map("svyMap", {
+  crs: L.CRS.Simple,
+  minZoom: -2.5, maxZoom: 1.5,
+  zoomSnap: 0.25,
+  attributionControl: false,
+  zoomControl: true
+});
+map.zoomControl.setPosition("bottomright");
+
+/* image extent is derived from the full grid, mask included, so the
+   art always lines up whatever you blank out */
+const gw = S * SQ3 * (CONFIG.cols + 0.5);
+const gh = S * (1.5 * CONFIG.rows + 0.5);
+const x0 = -S * SQ3 * 0.5, y0 = -S;
+const bounds = L.latLngBounds([-(y0 + gh), x0], [-y0, x0 + gw]);
+
+if (CONFIG.baseImage) {
+  L.imageOverlay(CONFIG.baseImage, bounds, { opacity: CONFIG.imageOpacity }).addTo(map);
+}
+function fitMap() {
+  if (CONFIG.fitMode === "fill") {
+    map.setView(bounds.getCenter(), map.getBoundsZoom(bounds, true));
+  } else {
+    map.fitBounds(bounds);
+  }
+}
+fitMap();
+map.setMaxBounds(bounds.pad(0.25));
+
+/* keep the framing right when the window changes shape */
+let fitTimer;
+window.addEventListener("resize", function () {
+  clearTimeout(fitTimer);
+  fitTimer = setTimeout(function () { map.invalidateSize(); fitMap(); }, 180);
+});
+
+/* ---------- draw ---------- */
+/* At this grid density the unlit hexes go on a canvas renderer, which
+   draws ~1,500 polygons without breaking a sweat. Written hexes go on a
+   separate SVG pane above it, because the permanent glow is a CSS filter
+   and CSS filters can't touch canvas. Best of both. */
+const gridRenderer = L.canvas({ padding: 0.6 });
+map.createPane("svyLit");
+map.getPane("svyLit").style.zIndex = 450;
+
+const hexLayer = L.layerGroup().addTo(map);
+const beaconLayer = L.layerGroup().addTo(map);
+const shapes = new Map();
+let writtenOnly = false, gridOn = true;
+
+function style(h) {
+  if (h.charted) {
+    return {
+      color: "#5fdce8",
+      weight: CONFIG.litWeight,
+      opacity: CONFIG.litOpacity,
+      fillColor: "#c9f6fa",
+      fillOpacity: CONFIG.litTint
+    };
+  }
+  return {
+    color: "#5fdce8",
+    weight: 1,
+    opacity: CONFIG.gridOpacity,
+    fillColor: "#5fdce8",
+    fillOpacity: 0
+  };
+}
+
+function card(h) {
+  const k = KINDS[h.kind];
+  if (!h.charted) {
+    return '<div class="svy-card">' +
+      '<div class="svy-card-meta"><span>Region ' + label(h.col, h.row) + '</span><span>No data</span></div>' +
+      '<h4>Uncharted</h4>' +
+      '<p>No survey has been written for this region yet.</p>' +
+      '<div class="svy-locked">Survey pending</div></div>';
+  }
+  /* Written hexes render as a Daggerheart environment stat block.
+     All DH fields are optional; anything omitted is skipped. */
+  let out = '<div class="svy-card">' +
+    '<div class="svy-card-meta"><span>Region ' + label(h.col, h.row) + '</span>' +
+      '<span>' + (k ? k.label : 'Field record') + '</span></div>' +
+    '<div class="svy-dh-title">' + h.name + '</div>';
+  if (h.tier != null || h.envType)
+    out += '<div class="svy-dh-tier">' +
+      (h.tier != null ? 'Tier ' + h.tier + ' ' : '') + (h.envType || '') + '</div>';
+  if (h.flavor) out += '<p class="svy-dh-flavor">' + h.flavor + '</p>';
+  if (h.impulses) out += '<div class="svy-dh-impulses"><b>Impulses:</b> ' + h.impulses + '</div>';
+  if (h.difficulty != null || h.adversaries) {
+    out += '<div class="svy-dh-box">';
+    if (h.difficulty != null) out += '<div><b>Difficulty:</b> ' + h.difficulty + '</div>';
+    if (h.adversaries) out += '<div><b>Potential Adversaries:</b> ' + h.adversaries + '</div>';
+    out += '</div>';
+  }
+  if (h.features && h.features.length) {
+    out += '<div class="svy-dh-feats">Features</div>';
+    h.features.forEach(function (f) {
+      out += '<p class="svy-dh-feat"><b>' + f.name +
+        (f.type ? ' - <span class="svy-dh-ftype">' + f.type + '</span>' : '') +
+        ':</b> ' + f.text + '</p>';
+    });
+  }
+  if (h.teaser && !h.flavor) out += '<p class="svy-dh-flavor">' + h.teaser + '</p>';
+  if (h.threat) out += '<div class="svy-card-threat">Threat &nbsp;<b>' + h.threat + '</b></div>';
+  out += '<a class="svy-go" href="' + CONFIG.linkBase + h.slug + '" target="' + CONFIG.linkTarget + '">' +
+    'Read the full entry</a></div>';
+  return out;
+}
+
+grid.forEach(h => {
+  const a = toAxial(h.col, h.row);
+  const c = center(a.q, a.r);
+  const opts = style(h);
+  if (h.charted) {
+    opts.className = "svy-lit";
+    opts.pane = "svyLit";
+  } else {
+    opts.renderer = gridRenderer;
+  }
+  const poly = L.polygon(corners(c.x, c.y), opts);
+
+  poly.on("mouseover", function () {
+    this.setStyle({ color: "#5fdce8", weight: 2, opacity: 1, dashArray: null });
+    this.bringToFront();
+  });
+  poly.on("mouseout", function () { this.setStyle(style(h)); });
+
+  poly.bindPopup(card(h), { closeButton: true, autoPanPadding: [30, 30] });
+  poly.addTo(hexLayer);
+  shapes.set(h.col + ":" + h.row, { hex: h, poly: poly, latlng: L.latLng(-c.y, c.x) });
+
+  /* the artwork already carries the place names — beacons only, no labels */
+  const beacon = h.charted && KINDS[h.kind] ? KINDS[h.kind].beacon : null;
+  if (beacon) {
+    /* px/py pin the beacon to the symbol on the art; otherwise hex center */
+    let bx = c.x, by = c.y;
+    if (h.px != null && h.py != null && CONFIG.imgW && CONFIG.imgH) {
+      bx = x0 + (h.px / CONFIG.imgW) * gw;
+      by = y0 + (h.py / CONFIG.imgH) * gh;
+    }
+    L.marker([-by, bx], {
+      interactive: false,
+      icon: L.divIcon({
+        className: "",
+        html: '<div class="svy-beacon' + (beacon === "town" ? " is-town" : "") + '"><i></i></div>',
+        iconSize: [0, 0]
+      })
+    }).addTo(beaconLayer);
+  }
+});
+
+/* Toggling visibility by container beats restyling 1,584 polygons one at
+   a time — each canvas setStyle would force a full redraw. */
+function applyVisibility() {
+  const gridEl = gridRenderer._container;
+  const litEl = map.getPane("svyLit");
+  if (gridEl) gridEl.style.display = (gridOn && !writtenOnly) ? "" : "none";
+  if (litEl) litEl.style.display = gridOn ? "" : "none";
+  if (gridOn) beaconLayer.addTo(map); else map.removeLayer(beaconLayer);
+}
+
+/* ---------- panel ---------- */
+const done = HEXES.length, total = grid.length;
+document.getElementById("svyDone").textContent = done;
+document.getElementById("svyTotal").textContent = total;
+document.getElementById("svyHeadDone").textContent = done;
+document.getElementById("svyHeadTotal").textContent = total;
+document.getElementById("svyBar").style.width = Math.round(done / total * 100) + "%";
+
+/* ---------- panel toggle ---------- */
+const root = document.getElementById("svyRoot");
+const tab = document.getElementById("svyTab");
+
+tab.addEventListener("click", function () {
+  const collapsed = root.classList.toggle("is-collapsed");
+  tab.setAttribute("aria-expanded", String(!collapsed));
+  if (!collapsed) setTimeout(() => document.getElementById("svySearch").focus(), 320);
+});
+
+/* the map has to be told its box changed, both during and after the slide */
+let slideTimer;
+root.addEventListener("transitionstart", function (e) {
+  if (e.target !== root) return;
+  clearInterval(slideTimer);
+  slideTimer = setInterval(() => map.invalidateSize({ animate: false }), 40);
+});
+root.addEventListener("transitionend", function (e) {
+  if (e.target !== root) return;
+  clearInterval(slideTimer);
+  map.invalidateSize({ animate: false });
+  fitMap();
+});
+
+document.getElementById("svyKey").innerHTML =
+  '<div class="svy-key is-lit"><i></i>Written &mdash; entry available</div>' +
+  '<div class="svy-key is-quiet"><i></i>Not yet written</div>';
+
+const results = document.getElementById("svyResults");
+
+function renderList(q) {
+  const term = (q || "").trim().toLowerCase();
+  const pool = HEXES.filter(h => !term || h.name.toLowerCase().indexOf(term) > -1);
+
+  if (!pool.length) {
+    results.innerHTML = term
+      ? '<p class="svy-eyebrow">No match</p>' +
+        '<p class="svy-empty">Nothing written under that name yet.</p>'
+      : '<p class="svy-eyebrow">Written regions</p>' +
+        '<p class="svy-empty">None yet. Add entries to the HEXES array and they appear here.</p>';
+    return;
+  }
+
+  results.innerHTML = '<p class="svy-eyebrow">' +
+    (term ? pool.length + " match" + (pool.length > 1 ? "es" : "") : "Written regions") + '</p>' +
+    pool.map(h =>
+      '<button class="svy-hit" data-k="' + h.col + ':' + h.row + '">' + h.name +
+      '<u>' + label(h.col, h.row) + ' &middot; ' + (KINDS[h.kind] ? KINDS[h.kind].label : "region") + '</u></button>'
+    ).join("");
+}
+
+results.addEventListener("click", function (e) {
+  const btn = e.target.closest(".svy-hit");
+  if (!btn) return;
+  const entry = shapes.get(btn.getAttribute("data-k"));
+  if (!entry) return;
+  map.setView(entry.latlng, Math.max(map.getZoom(), -0.25), { animate: true });
+  entry.poly.openPopup();
+});
+
+document.getElementById("svySearch").addEventListener("input", e => renderList(e.target.value));
+document.getElementById("svyWritten").addEventListener("change", e => { writtenOnly = e.target.checked; applyVisibility(); });
+document.getElementById("svyNoGrid").addEventListener("change", e => { gridOn = !e.target.checked; applyVisibility(); });
+
+renderList("");
+})();
+</script>

@@ -1,0 +1,91 @@
+/* ==========================================================
+   CEALLA — BRAND LAYER (Calamity Punk Publishing)
+   Load AFTER each page's inline <style>:
+
+     <link rel="stylesheet"
+       href="https://cdn.jsdelivr.net/gh/USER/REPO@main/cealla-brand.css">
+
+   All font/image files live in the repo ROOT next to this file.
+   URLs are RELATIVE, so they resolve against this file's own CDN
+   location — no USER/REPO edits needed anywhere in here.
+   After changing this file: commit, then purge
+     https://purge.jsdelivr.net/gh/USER/REPO@main/cealla-brand.css
+   ========================================================== */
+
+/* ---------- Caslon Antique ---------- */
+@font-face {
+  font-family: "Caslon Antique";
+  src: url("CaslonAntique-Regular.ttf") format("truetype");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Caslon Antique";
+  src: url("CaslonAntique-Bold.ttf") format("truetype");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Caslon Antique";
+  src: url("CaslonAntique-Italic.ttf") format("truetype");
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: "Caslon Antique";
+  src: url("CaslonAntique-BoldItalic.ttf") format("truetype");
+  font-weight: 700; font-style: italic; font-display: swap;
+}
+
+/* ---------- display font swap: Cinzel -> Caslon Antique ----------
+   Every page reads var(--disp2) for its display type, so overriding
+   the token per scope rebrands all titles at once. Sizes bumped
+   because Caslon Antique runs narrower and lighter than Cinzel. */
+.svy, .cdx, .adx { --disp2: "Caslon Antique", "Georgia", serif; }
+
+/* map */
+.svy-title b { font-size: 19px; font-weight: 700; letter-spacing: .14em; }
+.svy-dh-title { font-size: 22px; font-weight: 700; letter-spacing: .04em; }
+
+/* environment + adversary indexes */
+.cdx-head h1, .adx-head h1 { font-size: 32px; font-weight: 700; letter-spacing: .08em; }
+.cdx-dh-title, .adx-dh-title { font-size: 22px; font-weight: 700; letter-spacing: .04em; }
+.cdx-row-name, .adx-row-name { font-size: 17px; font-weight: 700; letter-spacing: .05em; }
+
+/* flavor lines in the brand italic */
+.svy-dh-flavor, .cdx-dh-flavor, .adx-dh-flavor {
+  font-family: "Caslon Antique", "Georgia", serif;
+  font-size: 15px; letter-spacing: .02em;
+}
+
+/* ---------- CPP seal in page headers ----------
+   The logo art is dark grey; invert + brighten renders it as the
+   white seal on the navy theme. */
+.cdx-head, .adx-head { text-align: center; border-bottom: none !important; padding-bottom: 0 !important; }
+.cdx-head::before, .adx-head::before {
+  content: ""; display: block; width: 74px; height: 74px; margin: 0 auto 12px;
+  background: url("cpp-logo.png") center/contain no-repeat;
+  filter: invert(1) brightness(1.7) opacity(.92);
+}
+.svy-title::before {
+  content: ""; display: inline-block; width: 26px; height: 26px;
+  margin-right: 2px; vertical-align: -7px; flex: none;
+  background: url("cpp-logo.png") center/contain no-repeat;
+  filter: invert(1) brightness(1.7) opacity(.92);
+}
+
+/* ---------- CPP divider under index headers ---------- */
+.cdx-head::after, .adx-head::after {
+  content: ""; display: block; height: 42px; margin: 12px auto 0;
+  background: url("cpp-divider-white.png") center/auto 100% no-repeat;
+  opacity: .85;
+}
+
+/* ---------- drafting-grid texture wash on index pages ----------
+   The texture art is warm light linework; at low opacity it reads
+   as a faint blueprint sheen over the navy panel. */
+.cdx, .adx { position: relative; overflow: hidden; }
+.cdx::before, .adx::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: url("cpp-texture-light.png") top left/540px auto repeat;
+  opacity: .05; border-radius: inherit;
+}
+/* keep content above the wash */
+.cdx > *, .adx > * { position: relative; }

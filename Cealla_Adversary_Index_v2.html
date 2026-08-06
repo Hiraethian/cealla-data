@@ -1,0 +1,431 @@
+<!-- ==========================================================
+     CEALLA — ADVERSARY INDEX
+     Accordion list of statted adversaries, Demiplane-style.
+     Self-contained: paste the whole thing into a Squarespace
+     code block (same method as the hex map page).
+
+     EDIT THESE TWO:
+       1. CONFIG — link prefix + optional map page URL
+       2. ENTRIES — your written environments (same field shape
+          as the map's HEXES stat-block fields)
+     ========================================================== -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&family=Cinzel:wght@500;600;700&family=Karla:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+<style>
+.adx {
+  --slate:     #131b2c;
+  --slate-2:   #1b2539;
+  --slate-3:   #263450;
+  --rule:      #3c4e74;
+  --rune:      #e9cf8f;
+  --rune-soft: #f7e6b4;
+  --rune-dim:  #a68d54;
+  --amber:     #7ce0d3;
+  --ink:       #f4edda;
+  --ink-dim:   #97a3ba;
+  --disp: "Jost", "Futura", "Century Gothic", system-ui, sans-serif;
+  --disp2: "Cinzel", "Georgia", serif;
+  --body: "Karla", "Helvetica Neue", Arial, sans-serif;
+
+  font-family: var(--body);
+  background: linear-gradient(180deg, #182238, #111828);
+  color: var(--ink);
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+  border: 1px solid #93a0bd;
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 10px 34px rgba(0,0,0,.55);
+}
+.adx * { box-sizing: border-box; }
+
+/* ---------- header ---------- */
+.adx-head { border-bottom: 1px solid var(--rule); padding-bottom: 16px; }
+.adx-head h1 {
+  font-family: var(--disp2); font-weight: 600; font-size: 25px;
+  letter-spacing: .22em; text-transform: uppercase; margin: 0;
+  text-shadow: 0 0 18px rgba(233,207,143,.3);
+}
+.adx-head p {
+  margin: 7px 0 0; font-family: var(--disp); font-size: 10px; font-weight: 500;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--rune-dim);
+}
+
+/* ---------- controls ---------- */
+.adx-controls { margin-top: 18px; display: flex; flex-direction: column; gap: 12px; }
+.adx .adx-search {
+  /* explicit box-sizing + block display so Squarespace input resets
+     can't push it past the container's right edge */
+  box-sizing: border-box !important;
+  display: block; width: 100%; max-width: 100%;
+  padding: 11px 14px; font-family: var(--body); font-size: 14px;
+  background: linear-gradient(180deg, #141c30, #1b2539); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 8px; outline: none;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.4);
+}
+.adx .adx-search:focus { border-color: var(--rune-dim); box-shadow: 0 0 0 1px rgba(233,207,143,.2); }
+.adx .adx-search::placeholder { color: var(--ink-dim); }
+
+.adx-filter-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.adx-filter-label {
+  font-family: var(--disp); font-size: 9.5px; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--ink-dim);
+  margin-right: 4px; min-width: 40px;
+}
+.adx-chip {
+  font-family: var(--disp); font-size: 11px; font-weight: 500;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: 6px 13px; border-radius: 999px; cursor: pointer;
+  background: var(--slate-2); color: var(--ink-dim);
+  border: 1px solid var(--rule); transition: all .15s ease;
+}
+.adx-chip:hover { color: var(--ink); border-color: var(--rune-dim); }
+.adx-chip.is-on {
+  background: var(--rune); color: #241c07; border-color: var(--rune);
+  box-shadow: 0 0 14px rgba(233,207,143,.35);
+}
+.adx-count {
+  margin-left: auto; font-family: var(--disp); font-size: 10px; font-weight: 500;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--ink-dim);
+}
+
+/* ---------- list ---------- */
+.adx-list { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+.adx-empty {
+  padding: 40px 0; text-align: center; color: var(--ink-dim);
+  font-family: var(--disp); font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+}
+
+.adx-item {
+  border: 1px solid #6d7a97; border-radius: 10px;
+  background: linear-gradient(180deg, #26334f, #1a2338);
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.adx-item.is-open {
+  border-color: var(--rune);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 0 16px rgba(233,207,143,.28);
+}
+
+.adx-row {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px; background: none; border: 0; cursor: pointer;
+  color: var(--ink); text-align: left; font-family: inherit;
+}
+.adx-row:hover { background: var(--slate-3); }
+.adx-row-name {
+  font-family: var(--disp2); font-weight: 600; font-size: 14.5px;
+  letter-spacing: .06em; text-transform: uppercase; flex: 1; min-width: 0;
+}
+.adx-badge {
+  font-family: var(--disp); font-size: 9.5px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase;
+  padding: 4px 9px; border-radius: 3px; white-space: nowrap;
+}
+.adx-badge.tier { background: var(--slate-3); color: var(--rune); border: 1px solid var(--rune-dim); }
+.adx-badge.type { background: var(--slate-3); color: var(--amber); border: 1px solid var(--rule); }
+.adx-badge.kind { background: var(--slate-3); color: var(--ink-dim); border: 1px solid var(--rule); }
+.adx-chev {
+  width: 9px; height: 9px; flex: none;
+  border-right: 2px solid var(--rune-dim); border-bottom: 2px solid var(--rune-dim);
+  transform: rotate(45deg); transition: transform .18s ease; margin-top: -4px;
+}
+.adx-item.is-open .adx-chev { transform: rotate(225deg); margin-top: 4px; }
+
+/* accordion body — animated grid trick */
+.adx-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .22s ease; }
+.adx-item.is-open .adx-body { grid-template-rows: 1fr; }
+.adx-body-inner { overflow: hidden; }
+.adx-block { padding: 4px 18px 18px; border-top: 1px solid var(--rule); }
+
+/* ---------- stat block (mirrors the map popup) ---------- */
+.adx-dh-title {
+  font-family: var(--disp2); font-weight: 600; font-size: 18px;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ink);
+  margin: 14px 0 0; line-height: 1.15;
+  padding-bottom: 8px; border-bottom: 2px solid var(--rune);
+  text-shadow: 0 0 18px rgba(233,207,143,.3);
+}
+.adx-dh-tier {
+  font-family: var(--disp); font-weight: 600; font-size: 12px;
+  letter-spacing: .08em; color: var(--rune); margin-top: 7px;
+}
+.adx-dh-flavor { margin: 8px 0 0; font-size: 13px; font-style: italic; color: #ccd8e4; }
+.adx-dh-impulses {
+  margin-top: 10px; padding: 8px 0;
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  font-size: 13px; color: #e4edef;
+}
+.adx-dh-impulses b { color: var(--ink); }
+.adx-stats {
+  display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px;
+}
+.adx-stat {
+  flex: 1 1 auto; min-width: 78px; text-align: center;
+  padding: 7px 9px; border-radius: 4px;
+  background: var(--slate-3); border: 1px solid var(--rule);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+.adx-stat span {
+  display: block; font-family: var(--disp); font-size: 9px; font-weight: 600;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--ink-dim);
+}
+.adx-stat b {
+  display: block; margin-top: 3px; font-family: var(--disp);
+  font-size: 15px; font-weight: 600; color: var(--rune);
+}
+.adx-dh-box {
+  margin-top: 10px; border: 1px solid #6d7a97; border-left: 3px solid var(--rune);
+  background: linear-gradient(180deg, #1a2338, #141c2e); border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+}
+.adx-dh-box div { padding: 7px 11px; font-size: 13px; color: #e4edef; }
+.adx-dh-box div + div { border-top: 1px solid var(--rule); }
+.adx-dh-box b { color: var(--ink); }
+.adx-dh-feats {
+  font-family: var(--disp); font-weight: 600; font-size: 13px;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--ink);
+  margin: 14px 0 0;
+}
+.adx-dh-feat { margin: 8px 0 0; font-size: 13px; color: #e4edef; text-align: justify; line-height: 1.55; }
+.adx-dh-feat b { color: var(--ink); }
+.adx-dh-feat .adx-dh-ftype { color: var(--amber); }
+.adx-go {
+  display: inline-block; margin-top: 15px; padding: 9px 18px; border-radius: 3px;
+  background: var(--rune); color: #241c07; text-decoration: none;
+  font-family: var(--disp); font-weight: 600; font-size: 11.5px;
+  letter-spacing: .2em; text-transform: uppercase;
+  box-shadow: 0 0 18px rgba(233,207,143,.4); transition: background .16s ease, box-shadow .16s ease;
+}
+.adx-go:hover { background: var(--rune-soft); color: #241c07; box-shadow: 0 0 28px rgba(233,207,143,.7); }
+.adx-maplink {
+  display: inline-block; margin: 15px 0 0 8px; padding: 9px 18px; border-radius: 3px;
+  background: none; color: var(--rune); text-decoration: none;
+  border: 1px solid var(--rune-dim);
+  font-family: var(--disp); font-weight: 600; font-size: 11.5px;
+  letter-spacing: .2em; text-transform: uppercase; transition: all .16s ease;
+}
+.adx-maplink:hover { border-color: var(--rune); box-shadow: 0 0 14px rgba(233,207,143,.3); color: var(--rune-soft); }
+
+@media (max-width: 560px) {
+  .adx { padding: 20px 12px 40px; }
+  .adx-badge.kind { display: none; }
+  .adx-count { width: 100%; margin: 2px 0 0; }
+}
+</style>
+<!-- CPP brand layer: Caslon Antique, seal, divider, texture.
+     Must come AFTER the inline style above so its overrides win. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/USER/REPO@main/cealla-brand.css">
+
+
+<div class="adx" id="adxRoot">
+  <div class="adx-head">
+    <h1>Adversaries of Cealla</h1>
+    <p>Field records &mdash; statted adversaries</p>
+  </div>
+
+  <div class="adx-controls">
+    <input class="adx-search" id="adxSearch" type="search"
+           placeholder="Search by name, motive, or feature&hellip;" autocomplete="off">
+    <div class="adx-filter-row" id="adxTierRow">
+      <span class="adx-filter-label">Tier</span>
+    </div>
+    <div class="adx-filter-row" id="adxTypeRow">
+      <span class="adx-filter-label">Type</span>
+      <span class="adx-count" id="adxCount"></span>
+    </div>
+  </div>
+
+  <div class="adx-list" id="adxList"></div>
+</div>
+
+<!-- Shared data — same tag as on the map page. If it loads, its
+     entries replace the inline ENTRIES fallback below. -->
+<script src="https://cdn.jsdelivr.net/gh/USER/REPO@main/cealla-data.js"></script>
+
+<script>
+(function () {
+"use strict";
+
+/* ============================================================
+   1. CONFIG
+   ============================================================ */
+const CONFIG = {
+  linkBase: "/lore/",      // prefix for each entry's slug
+  linkTarget: "_self",
+  mapPage: "/testhex"      // your hex map page; set to "" to hide the map button
+};
+
+/* ============================================================
+   2. ENTRIES
+      Same field shape as the map's HEXES stat-block fields.
+      Everything after "name" is optional and skipped if absent.
+      The two entries below are placeholders — replace them.
+   ============================================================ */
+/* Inline fallback — used only when the shared data file above
+   fails to load. With the shared file in place you never edit this. */
+const ENTRIES_FALLBACK = [
+
+  { name: "Example Adversary", slug: "example-adversary",
+    tier: 1, advType: "Standard",
+    flavor: "One italic line describing what this thing looks like.",
+    motives: "Motive one, motive two",
+    difficulty: 11, thresholds: "8/15", hp: 5, stress: 3, atk: "+2",
+    attack: { name: "Rusted Blade", range: "Melee", damage: "1d8+2 phy" },
+    experience: "Scavenging +2",
+    features: [
+      { name: "Feature Name", type: "Action",
+        text: "Effect text. Inline <b>bold</b> is allowed for keywords." }
+    ] },
+
+];
+
+/* ============================================================
+   3. RENDERING — no edits needed below
+   ============================================================ */
+const SHARED = window.CEALLA_DATA || null;
+const ENTRIES = (SHARED && Array.isArray(SHARED.adversaries)) ? SHARED.adversaries : ENTRIES_FALLBACK;
+if (SHARED) {
+  if (SHARED.linkBase) CONFIG.linkBase = SHARED.linkBase;
+  if (SHARED.mapPage != null) CONFIG.mapPage = SHARED.mapPage;
+}
+const TYPES = ["Bruiser", "Horde", "Leader", "Minion", "Ranged",
+               "Skulk", "Social", "Solo", "Standard", "Support"];
+
+let q = "", tierF = 0, typeF = "";   // 0 / "" mean "all"
+
+function block(e) {
+  let out = '<div class="adx-block">' +
+    '<div class="adx-dh-title">' + e.name + '</div>';
+  if (e.tier != null || e.advType)
+    out += '<div class="adx-dh-tier">' +
+      (e.tier != null ? 'Tier ' + e.tier + ' ' : '') + (e.advType || '') + '</div>';
+  if (e.flavor) out += '<p class="adx-dh-flavor">' + e.flavor + '</p>';
+  if (e.motives) out += '<div class="adx-dh-impulses"><b>Motives &amp; Tactics:</b> ' + e.motives + '</div>';
+
+  /* stat strip: Difficulty | Thresholds | HP | Stress */
+  const stats = [];
+  if (e.difficulty != null) stats.push(["Difficulty", e.difficulty]);
+  if (e.thresholds)         stats.push(["Thresholds", e.thresholds]);
+  if (e.hp != null)         stats.push(["HP", e.hp]);
+  if (e.stress != null)     stats.push(["Stress", e.stress]);
+  if (stats.length) {
+    out += '<div class="adx-stats">' + stats.map(function (s) {
+      return '<div class="adx-stat"><span>' + s[0] + '</span><b>' + s[1] + '</b></div>';
+    }).join("") + '</div>';
+  }
+
+  /* attack line: ATK + weapon + range + damage */
+  if (e.atk != null || e.attack) {
+    out += '<div class="adx-dh-box"><div><b>ATK:</b> ' + (e.atk != null ? e.atk : "\u2014");
+    if (e.attack) {
+      out += ' &nbsp;<b>' + (e.attack.name || "Attack") + ':</b> ' +
+             (e.attack.range || "") + (e.attack.damage ? ' | ' + e.attack.damage : "");
+    }
+    out += '</div>' +
+      (e.experience ? '<div><b>Experience:</b> ' + e.experience + '</div>' : '') +
+      '</div>';
+  } else if (e.experience) {
+    out += '<div class="adx-dh-box"><div><b>Experience:</b> ' + e.experience + '</div></div>';
+  }
+
+  if (e.features && e.features.length) {
+    out += '<div class="adx-dh-feats">Features</div>';
+    e.features.forEach(function (f) {
+      out += '<p class="adx-dh-feat"><b>' + f.name +
+        (f.type ? ' - <span class="adx-dh-ftype">' + f.type + '</span>' : '') +
+        ':</b> ' + f.text + '</p>';
+    });
+  }
+  if (e.slug)
+    out += '<a class="adx-go" href="' + CONFIG.linkBase + e.slug + '" target="' + CONFIG.linkTarget + '">Read the full entry</a>';
+  if (CONFIG.mapPage)
+    out += '<a class="adx-maplink" href="' + CONFIG.mapPage + '" target="' + CONFIG.linkTarget + '">View the map</a>';
+  out += '</div>';
+  return out;
+}
+
+function haystack(e) {
+  let s = e.name + " " + (e.motives || "") + " " + (e.experience || "") + " " + (e.flavor || "") +
+          " " + (e.advType || "") + " " + (e.attack ? e.attack.name : "");
+  (e.features || []).forEach(function (f) { s += " " + f.name + " " + f.text; });
+  return s.toLowerCase();
+}
+
+function render() {
+  const list = document.getElementById("adxList");
+  const shown = ENTRIES
+    .filter(function (e) {
+      if (tierF && e.tier !== tierF) return false;
+      if (typeF && e.advType !== typeF) return false;
+      if (q && haystack(e).indexOf(q) === -1) return false;
+      return true;
+    })
+    .sort(function (a, b) { return a.name.localeCompare(b.name); });
+
+  document.getElementById("adxCount").textContent =
+    shown.length + " of " + ENTRIES.length + " entries";
+
+  if (!shown.length) {
+    list.innerHTML = '<div class="adx-empty">No entries match</div>';
+    return;
+  }
+
+  list.innerHTML = shown.map(function (e, i) {
+    return '<div class="adx-item" data-i="' + i + '">' +
+      '<button class="adx-row" aria-expanded="false">' +
+        '<span class="adx-row-name">' + e.name + '</span>' +
+        (e.tier != null ? '<span class="adx-badge tier">Tier ' + e.tier + '</span>' : '') +
+        (e.advType ? '<span class="adx-badge type">' + e.advType + '</span>' : '') +
+        '<span class="adx-chev"></span>' +
+      '</button>' +
+      '<div class="adx-body"><div class="adx-body-inner">' + block(e) + '</div></div>' +
+    '</div>';
+  }).join("");
+
+  list.querySelectorAll(".adx-row").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const item = btn.parentElement;
+      const open = item.classList.toggle("is-open");
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+  });
+}
+
+/* filter chips */
+function chip(label, on, fn) {
+  const b = document.createElement("button");
+  b.className = "adx-chip" + (on ? " is-on" : "");
+  b.textContent = label;
+  b.addEventListener("click", fn);
+  return b;
+}
+function buildChips() {
+  const tr = document.getElementById("adxTierRow");
+  tr.querySelectorAll(".adx-chip").forEach(function (c) { c.remove(); });
+  tr.appendChild(chip("All", tierF === 0, function () { tierF = 0; buildChips(); render(); }));
+  [1, 2, 3, 4].forEach(function (t) {
+    tr.appendChild(chip("Tier " + t, tierF === t, function () { tierF = t; buildChips(); render(); }));
+  });
+  const ty = document.getElementById("adxTypeRow");
+  ty.querySelectorAll(".adx-chip").forEach(function (c) { c.remove(); });
+  const count = document.getElementById("adxCount");
+  ty.insertBefore(chip("All", typeF === "", function () { typeF = ""; buildChips(); render(); }), count);
+  TYPES.forEach(function (t) {
+    ty.insertBefore(chip(t, typeF === t, function () { typeF = t; buildChips(); render(); }), count);
+  });
+}
+
+document.getElementById("adxSearch").addEventListener("input", function (e) {
+  q = e.target.value.trim().toLowerCase();
+  render();
+});
+
+buildChips();
+render();
+})();
+</script>
